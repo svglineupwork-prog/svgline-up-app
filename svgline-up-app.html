@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Svgline-up Pvt Ltd – Site Manager</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6f8;--card:#fff;--tx:#1b2430;--mut:#667085;--pri:#0b5cad;--bd:#d9dee5;--ok:#1a8a4a;--bad:#c62f2f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151b;--card:#1a222b;--tx:#e8edf2;--mut:#9aa6b2;--pri:#4a9bf0;--bd:#2d3844;--ok:#43c077;--bad:#ef6a6a}}
+:root[data-theme="dark"]{--bg:#10151b;--card:#1a222b;--tx:#e8edf2;--mut:#9aa6b2;--pri:#4a9bf0;--bd:#2d3844;--ok:#43c077;--bad:#ef6a6a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--pri);color:#fff;padding:12px 14px}
+header h1{margin:0;font-size:18px}header small{opacity:.85}
+.bar{display:flex;gap:6px;overflow-x:auto;padding:8px;background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.bar button{flex:0 0 auto;border:1px solid var(--bd);background:var(--bg);color:var(--tx);padding:8px 12px;border-radius:20px;font-size:14px}
+.bar button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+main{max-width:900px;margin:0 auto;padding:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+h2{font-size:16px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:2px}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:56px}
+.full{grid-column:1/-1}
+.btn{background:var(--pri);color:#fff;border:0;padding:10px 16px;border-radius:8px;font-size:15px;margin-top:10px}
+.btn.g{background:var(--bg);color:var(--tx);border:1px solid var(--bd)}
+.row{border-top:1px solid var(--bd);padding:8px 0;display:flex;gap:8px;justify-content:space-between}
+.row:first-child{border-top:0}.row b{display:block}.row span{color:var(--mut);font-size:13px;display:block}
+.x{background:none;border:0;color:var(--bad);font-size:18px}
+.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kpi div{background:var(--bg);border-radius:8px;padding:10px}.kpi small{color:var(--mut)}.kpi b{font-size:18px;display:block}
+.in{color:var(--ok)}.out{color:var(--bad)}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}
+.empty{color:var(--mut);text-align:center;padding:12px}
+.drow{display:flex;align-items:center;gap:8px;border-top:1px solid var(--bd);padding:8px 0}.bd{border:1.5px solid;border-radius:8px;min-width:40px;height:40px;background:none;font-size:16px;margin-right:6px;font-weight:600}.bd.ok{color:var(--ok);border-color:var(--ok)}.bd.bad{color:var(--bad);border-color:var(--bad)}.bd.on.ok{background:var(--ok);color:#fff}.bd.on.bad{background:var(--bad);color:#fff}.plus{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--tx);background:none;color:var(--tx);font-size:22px;line-height:1}.wh{background:var(--bg);padding:6px 12px;font-size:12px;font-weight:600;color:var(--mut);margin:0 -12px}.bd.no{color:var(--mut);border-color:var(--mut)}.bd.on.no{background:var(--mut);color:#fff}.sbn{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;height:48px;font-size:15px;font-weight:600}.sbn.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+@media print{.bar,form,.x,.noprint{display:none!important}}
+</style>
+</head>
+<body>
+<header><h1>Svgline-up Pvt Ltd</h1><small>Pipeline &amp; Civil Work – Daily Site Manager</small></header>
+<div class="bar" id="tabs"></div>
+<main>
+<div class="card noprint"><label>Project filter</label><select id="pf"></select></div>
+<div id="view"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const today=()=>fmt(new Date());
+const inr=n=>"₹"+(Number(n)||0).toLocaleString("en-IN");
+let editId=null;
+let db={projects:[],dpr:[],att:[],fin:[],emp:[]},tab="dash",pf="all";
+try{const s=localStorage.getItem("svgline_db");if(s)db=Object.assign(db,JSON.parse(s))}catch(e){}
+db.emp.forEach(e=>{if(e.stype=="Monthly fixed")e.stype="Company Employee"});
+const save=()=>{try{localStorage.setItem("svgline_db",JSON.stringify(db))}catch(e){}};
+const pname=id=>(db.projects.find(p=>p.id==id)||{}).name||"-";
+const ROLES=["Labour","Helper","Mason","Fitter / Welder","Operator","Supervisor","Engineer","Driver"];
+const SZ={HDPE:["63","75","90","110","125","140","160","180","200","225","250","280","315","350"],DI:["100","150","200","250","300","350","400","450","500","600"]};
+const PR=[["pipe","Pipe type","select",["HDPE","DI"]],["size","Size (mm)","select",SZ.HDPE],["qty","Qty (nos)","number"],["len","Length per pipe (m) – DI = 5.5","number"],["tlen","Total length (m)","calc"],["rate","Rate (₹ per m)","number"],["total","Total (₹)","calc"]];
+const MR={att:{h:["date","project"],r:["name","role","status","wage","adv"]},emp:{h:[],r:["name","role","stype","amt"]}};
+const F={
+ projects:[["name","Project name","text"],["client","Client","text"],["loc","Location","text"],["start","Start date","date",today()],["budget","Budget (₹)","number"]],
+ dpr:[["date","Date","date",today()],["project","Project","project"],["work","Work type","select",["Pipeline laying","Trenching / Excavation","Backfilling","Civil – Foundation","Civil – RCC / Masonry","Road restoration","Testing / Commissioning","Other"]],["loc","Location / Chainage","text"]],
+ att:[["date","Date","date",today()],["project","Project","project"],["name","Worker name","text"],["role","Role","select",ROLES],["status","Status","select",["Present","Half Day","Absent"]],["wage","Daily wage (₹)","number"],["adv","Advance given (₹)","number"]],
+ emp:[["name","Employee name","text"],["role","Work / Role","select",ROLES],["stype","Salary type","select",["Company Employee","Daily wage"]],["amt","Salary amount (₹) – per month ya per day","number"]],
+ fin:[["date","Date","date",today()],["project","Project","project"],["type","Type","select",["Cost","Income"]],["cat","Category","select",["Material","Labour / Wages","Machinery / Rent","Fuel","Transport","Subcontractor","Site expense","Client payment / RA bill","Other"]],["amount","Amount (₹)","number"],["note","Note","text"]]
+};
+const T={dash:"Dashboard",projects:"Projects",dpr:"Daily DPR",att:"Attendance",emp:"Employees",fin:"Cost & Income"};
+function tabs(){$("#tabs").innerHTML=Object.keys(T).map(k=>`<button class="${k==tab?"on":""}" data-t="${k}">${T[k]}</button>`).join("");
+ $("#tabs").onclick=e=>{if(e.target.dataset.t){tab=e.target.dataset.t;editId=null;render()}}}
+function pfSel(){$("#pf").innerHTML='<option value="all">All projects</option>'+db.projects.map(p=>`<option value="${p.id}" ${p.id==pf?"selected":""}>${esc(p.name)}</option>`).join("");$("#pf").onchange=e=>{pf=e.target.value;render()}}
+function field(f){const[k,l,t,d]=f;let h=`<div class="${t=="textarea"?"full":""}"><label>${l}</label>`;
+ if(t=="select")h+=`<select name="${k}">${d.map(o=>`<option>${o}</option>`).join("")}</select>`;
+ else if(t=="project")h+=`<select name="${k}" required>${db.projects.map(p=>`<option value="${p.id}" ${p.id==pf?"selected":""}>${esc(p.name)}</option>`).join("")}</select>`;
+ else if(t=="calc")h+=`<input name="${k}" type="number" value="0" readonly>`;
+ else if(t=="textarea")h+=`<textarea name="${k}"></textarea>`;
+ else h+=`<input name="${k}" type="${t}" value="${d||""}" ${k=="name"||k=="amount"?"required":""} ${t=="number"?'step="any" min="0"':""}>`;
+ return h+"</div>"}
+function formHtml(k){if(k!="projects"&&k!="emp"&&!db.projects.length)return'<div class="card empty">Pehle "Projects" tab me project add karein.</div>';
+ const ed=editId&&db[k]&&db[k].find(x=>x.id==editId);return`<form class="card" id="f"><h2>${ed?"Edit karein":"Nayi entry"} – ${T[k]}</h2><div class="grid">${(MR[k]?F[k].filter(x=>MR[k].h.includes(x[0])):F[k]).map(field).join("")}</div><button class="btn">${ed?"Update karein":"Save karein"}</button>${ed?' <button type="button" class="btn g" id="cx">Cancel</button>':""}</form>`}
+function line(k,r){
+ if(k=="projects")return[`${esc(r.name)}`,`${esc(r.client)} • ${esc(r.loc)} • Start ${esc(r.start)} • Budget ${inr(r.budget)}`];
+ if(k=="emp")return[esc(r.name),`${esc(r.role)} • ${esc(r.stype)} • ${inr(r.amt)}${r.stype=="Daily wage"?" per din":" per mahina"}`];
+ if(k=="dpr"){const rs=r.rows||[r],gt=rs.reduce((t,o)=>t+(+o.total||0),0);return[`${esc(r.date)} – ${esc(pname(r.project))} – ${esc(r.work)}`,`${esc(r.loc)}`+rs.map((o,n)=>`<br>${n+1}) ${esc(o.pipe)} ${esc(o.size)} mm | Qty: ${esc(o.qty)} | Length/pipe: ${esc(o.len)} m | Total length: ${esc(o.tlen)} m | Rate: ${inr(o.rate)}/m | <b>${inr(o.total)}</b>`).join("")+`<br><b>Grand total: ${inr(gt)}</b>`]}
+ if(k=="att")return[`${esc(r.date)} – ${esc(r.name)} (${esc(r.role)})`,`${esc(pname(r.project))} • ${esc(r.status)} • Wage ${inr(r.wage)} → ${inr(wage(r))}${+r.adv?` • Advance ${inr(r.adv)}`:""}`];
+ return[`<span class="${r.type=="Income"?"in":"out"}" style="display:inline">${esc(r.type)} ${inr(r.amount)}</span> – ${esc(r.cat)}`,`${esc(r.date)} • ${esc(pname(r.project))} • ${esc(r.note)}`]}
+const DV={Present:1,"Half Day":.5,Absent:0,A:0,"½":.5,P:1,"P+½":1.5,"P+P":2,PA:1,No:0};
+const dv=r=>DV[r.status]??0,K=n=>(n||"").trim().toLowerCase(),emp_=n=>db.emp.find(e=>K(e.name)==K(n));
+const dimOf=d=>new Date(+d.slice(0,4),+d.slice(5,7),0).getDate();
+const rate=r=>{const e=emp_(r.name);return e?(e.stype=="Daily wage"?+e.amt||0:(+e.amt||0)/dimOf(r.date)):+r.wage||0};
+const extra=r=>(+r.ot||0)+(+r.bonus||0)+(+r.bata||0);
+const wage=r=>dv(r)*rate(r)+extra(r);
+const flt=a=>a.filter(r=>pf=="all"||(r.project||r.id)==pf);
+function sheet(f){const box=document.createElement("div"),btn=f.querySelector(".btn");
+ if(!db.emp.length){box.innerHTML='<div class="empty">Pehle "Employees" tab me employee ke naam ek baar save karein. Phir yahan roz sirf status chunna hai.</div>';f.insertBefore(box,btn);btn.style.display="none";return}
+ box.innerHTML='<h2 style="margin-top:12px">Employees ki attendance</h2><button type="button" class="btn g" id="allp" style="margin-top:0">Sab Present</button> <button type="button" class="btn g" id="alla" style="margin-top:0">Sab Absent</button><div id="sh"></div>';
+ const sh=box.querySelector("#sh");
+ sh.innerHTML=db.emp.map((e,i)=>`<div class="er" data-i="${i}" style="border:1px solid var(--bd);border-radius:8px;padding:8px;margin-top:8px"><b>${esc(e.name)}</b> <span style="color:var(--mut);font-size:13px">${esc(e.role)} • ${esc(e.stype)} ${inr(e.amt)}</span><div class="grid" style="margin-top:6px"><div><label>Status</label><select class="st"><option>Present</option><option>Half Day</option><option>Absent</option><option>Skip</option></select></div>${e.stype=="Daily wage"?`<div><label>Daily wage (₹)</label><input class="wg" type="number" step="any" min="0" value="${+e.amt||0}"></div>`:""}<div><label>Advance diya (₹)</label><input class="ad" type="number" step="any" min="0"></div></div></div>`).join("");
+ f.insertBefore(box,btn);
+ const K=n=>(n||"").trim().toLowerCase();
+ const load=()=>{const d=f.elements.date.value,p=f.elements.project.value;sh.querySelectorAll(".er").forEach(div=>{const e=db.emp[div.dataset.i],ex=db.att.find(r=>r.date==d&&r.project==p&&K(r.name)==K(e.name)),st=div.querySelector(".st"),ad=div.querySelector(".ad"),wg=div.querySelector(".wg");
+  if(ex){st.value=ex.status=="Advance only"?"Skip":ex.status;ad.value=+ex.adv||"";if(wg&&+ex.wage)wg.value=ex.wage}else{st.value="Present";ad.value=""}})};
+ f.elements.date.onchange=load;f.elements.project.onchange=load;load();
+ const all=v=>()=>sh.querySelectorAll(".st").forEach(x=>x.value=v);
+ box.querySelector("#allp").onclick=all("Present");box.querySelector("#alla").onclick=all("Absent")}
+function sheetSave(f){const d=f.elements.date.value,p=f.elements.project.value,K=n=>(n||"").trim().toLowerCase();let n=0;
+ f.querySelectorAll(".er").forEach(div=>{const e=db.emp[div.dataset.i],st=div.querySelector(".st").value,ad=+div.querySelector(".ad").value||0,wg=div.querySelector(".wg"),
+  status=st=="Skip"?(ad>0?"Advance only":null):st,i=db.att.findIndex(r=>r.date==d&&r.project==p&&K(r.name)==K(e.name));
+  if(!status){if(i>=0)db.att.splice(i,1);return}
+  const rec={id:i>=0?db.att[i].id:Date.now()+"e"+div.dataset.i,date:d,project:p,name:e.name,role:e.role,status,wage:wg?wg.value:"",adv:ad||""};
+  if(i>=0)db.att[i]=rec;else db.att.push(rec);n++});
+ save();alert(n+" entry save ho gayi");render()}
+let mon=today().slice(0,7);
+function mcalc(mm){const m={},cur=today().slice(0,7);
+ db.emp.forEach(e=>m[K(e.name)]={name:e.name,work:e.role,p:0,h:0,a:0,w:0,x:0,adv:0,paid:0,md:0,n:0,e});
+ flt(db.att).filter(r=>(r.date||"").slice(0,7)==mm).forEach(r=>{const k=K(r.name),o=m[k]||(m[k]={name:r.name,work:r.role,p:0,h:0,a:0,w:0,x:0,adv:0,paid:0,md:0,n:0});o.n++;if(!o.e)o.work=r.role;
+  const d=dv(r),rt=rate(r),mk=r.status in DV;if(d>=1)o.p++;else if(d==.5)o.h++;else if(r.status=="Absent"||r.status=="A")o.a++;
+  o.w+=wage(r);o.x+=(mk?(d-1)*rt:0)+extra(r);o.adv+=+r.adv||0;o.paid+=+r.paid||0;o.md+=+r.dues||0});
+ Object.values(m).forEach(o=>{o.sal=Math.round(o.w)});
+ return m}
+function mrows(){const m=mcalc(mon),cur=today().slice(0,7),done=mon<cur;
+ [...new Set(flt(db.att).map(r=>(r.date||"").slice(0,7)))].filter(x=>x&&x<mon&&x<cur).forEach(mm=>{const q=mcalc(mm);Object.keys(q).forEach(k=>{const o=q[k];if(!m[k])m[k]={name:o.name,work:o.work,p:0,h:0,a:0,adv:0,paid:0,md:0,n:0,sal:0,e:o.e};m[k].carry=(m[k].carry||0)+o.sal-o.adv-o.paid+o.md})});
+ return Object.values(m).filter(o=>pf=="all"||o.p+o.h+o.a>0||o.carry).map(o=>{o.carry=o.carry||0;o.dues=o.sal-o.adv-o.paid+o.md;o.rt=o.e?inr(o.e.amt)+(o.e.stype=="Daily wage"?"/din":""):"-";return o}).sort((a,b)=>a.name.localeCompare(b.name))}
+function mcard(R,title){const S=k=>R.reduce((t,o)=>t+o[k],0),pc=S("carry")!=0;
+ return`<div class="card"><h2>${title}</h2><div class="scroll"><table><tr><th>Name</th><th>Work</th><th>P</th><th>½</th><th>A</th><th>Salary (Monthly)</th><th>Payable (on Attendance)</th><th>Advance</th><th>Paid</th><th>Dues (is mahine)</th>${pc?"<th>Pichla Dues</th>":""}</tr>`+
+ R.map(o=>`<tr><td>${esc(o.name)}</td><td>${esc(o.work)}</td><td>${o.p}</td><td>${o.h}</td><td>${o.a}</td><td>${o.rt}</td><td><b>${inr(o.sal)}</b></td><td>${inr(o.adv)}</td><td>${inr(o.paid)}</td><td class="${o.dues>0?"out":"in"}"><b>${inr(o.dues)}</b></td>${pc?`<td class="out">${inr(o.carry)}</td>`:""}</tr>`).join("")+
+ `<tr><td><b>Total</b></td><td></td><td></td><td></td><td></td><td></td>${["sal","adv","paid","dues"].concat(pc?["carry"]:[]).map(k=>`<td><b>${inr(S(k))}</b></td>`).join("")}</tr></table></div></div>`}
+function renameEmp(a,b){if(a===b)return;db.att.forEach(r=>{if(K(r.name)==K(a))r.name=b})}
+let aEdit=false,aEmp=null,aMode="Month",aAnchor=today(),aSheet=null,aField=null;
+const ST=["A","½","P","P+½","P+P","PA","No"],ADD=[["ot","Overtime"],["adv","Advance"],["note","More details"],["bonus","Bonus"],["bata","Bata"],["paid","Payment (salary diya)"],["dues","Dues"]];
+const getA=(n,d)=>db.att.find(r=>K(r.name)==K(n)&&r.date==d);
+function upsert(ds,patch){let r=getA(aEmp,ds);const e=emp_(aEmp);if(!r){r={id:Date.now()+"a"+Math.random().toString(36).slice(2,5),date:ds,name:e?e.name:aEmp,role:e?e.role:"",project:"",status:""};db.att.push(r)}if(pf!="all")r.project=pf;Object.assign(r,patch);save()}
+function clr(ds){const r=getA(aEmp,ds);if(!r)return;r.status="";if(!ADD.some(x=>r[x[0]]))db.att.splice(db.att.indexOf(r),1);save()}
+function attView(){
+ if(!db.emp.length)return'<div class="card empty">Pehle "Employees" tab me employee ke naam save karein.</div>';
+ if(!aEmp){const all=mrows(),fx=o=>o.e&&o.e.stype=="Company Employee",row=o=>`<div class="row" data-a="emp|${esc(o.name)}" style="cursor:pointer"><div><b>${esc(o.name)}</b><span>${esc(o.work)} • P ${o.p} • ½ ${o.h} • A ${o.a}</span></div><div style="text-align:right"><b>${inr(o.sal)}</b><span>Payable ›</span></div></div>`,
+  sec=(t,n)=>{const R=all.filter(o=>!!fx(o)==t);return`<div class="card"><h2>${n} (${R.length})</h2>`+(R.map(row).join("")||'<div class="empty">Koi employee nahi</div>')+"</div>"+(R.length?mcard(R,n+" – Monthly Details"):"")};
+  return`<div class="card"><label>Month</label><input type="month" id="mon" value="${mon}" style="max-width:200px"><small style="display:block;color:var(--mut);margin-top:6px">Payable (on Attendance) = din ke hisab se wage + Overtime + Bonus + Bata. Din ki ginti: P = 1, ½ = aadha, P+½ = 1.5, P+P = 2, PA = 1, A = 0. Company Employee ka daily rate = Salary (Monthly) ÷ mahine ke din. Dues (is mahine) = Payable - Advance - Paid. Pichle mahino ka baki alag se Pichla Dues me dikhta hai.</small><button class="btn g noprint" id="mcsv">Monthly CSV</button> <button class="btn g noprint" onclick="print()">Print</button></div>`+sec(true,"Company Employees")+sec(false,"Per Day Employees")}
+ const anc=new Date(aAnchor+"T00:00"),days=[];mon=aAnchor.slice(0,7);
+ if(aMode=="Month"){for(let i=1;i<=dimOf(mon+"-01");i++)days.push(new Date(anc.getFullYear(),anc.getMonth(),i))}
+ else{const a=new Date(anc);a.setDate(a.getDate()-(a.getDay()+6)%7);for(let i=0;i<7;i++)days.push(new Date(a.getFullYear(),a.getMonth(),a.getDate()+i))}
+ const M=d=>d.toLocaleDateString("en-IN",{month:"short"}),lab=aMode=="Month"?anc.toLocaleDateString("en-IN",{month:"short",year:"numeric"}):days[0].getDate()+" – "+days[6].getDate()+" "+M(days[6]);
+ const o=mrows().find(x=>K(x.name)==K(aEmp))||{p:0,h:0,a:0,sal:0,adv:0,paid:0,dues:0,carry:0,rt:"-"},e=emp_(aEmp);
+ const ec=aEdit?`<div class="card"><h2>Employee edit karein</h2><div class="grid"><div><label>Name</label><input id="en" value="${esc(aEmp)}"></div><div><label>Work / Role</label><select id="er2">${ROLES.map(x=>`<option ${e&&e.role==x?"selected":""}>${x}</option>`).join("")}</select></div><div><label>Salary type</label><select id="et">${["Company Employee","Daily wage"].map(x=>`<option ${e&&e.stype==x?"selected":""}>${x}</option>`).join("")}</select></div><div><label>Salary (₹) – per mahina ya per din</label><input id="ea" type="number" step="any" min="0" value="${e?esc(e.amt):""}"></div></div><button class="btn" data-a="esave">Save</button> <button class="btn g" data-a="ecancel">Cancel</button></div>`:"";
+ let h=`<div class="card"><div style="display:flex;align-items:center;gap:8px"><button class="x" style="color:var(--tx);font-size:22px" data-a="back">←</button><div><h2 style="margin:0">${esc(aEmp)}</h2><small style="color:var(--mut)">${e?esc(e.role)+" • "+esc(e.stype)+" "+inr(e.amt):""}</small></div><button class="btn g" style="margin:0 0 0 auto;padding:6px 12px" data-a="eedit">✎ Edit</button></div>
+ <div class="kpi" style="margin-top:8px"><div><small>Salary (Monthly)</small><b>${o.rt}</b></div><div><small>Payable (on Attendance)</small><b>${inr(o.sal)}</b></div><div><small>Advance</small><b class="out">${inr(o.adv)}</b></div><div><small>Paid (diya)</small><b>${inr(o.paid)}</b></div><div><small>Dues (is mahine)</small><b class="${o.dues>0?"out":"in"}">${inr(o.dues)}</b></div><div><small>Pichla Dues</small><b class="out">${inr(o.carry)}</b></div><div><small>P / ½ / A</small><b>${o.p} / ${o.h} / ${o.a}</b></div></div>
+ <div style="display:flex;gap:6px;align-items:center;margin-top:10px"><button class="bd ${aMode=="Week"?"on ok":""}" style="color:var(--tx);border-color:var(--bd);padding:0 10px" data-a="mode|Week">Week</button><button class="bd ${aMode=="Month"?"on ok":""}" style="color:var(--tx);border-color:var(--bd);padding:0 10px" data-a="mode|Month">Month</button><span style="flex:1"></span><button class="x" style="color:var(--tx)" data-a="nav|-1">‹</button><b>${lab}</b><button class="x" style="color:var(--tx)" data-a="nav|1">›</button></div></div>${ec}<div class="card" style="padding:0 12px">`;
+ days.forEach((d,i)=>{const ds=fmt(d),r=getA(aEmp,ds),mk=r&&r.status in DV,T=ds==today();
+  if(aMode=="Month"&&(i==0||d.getDay()==1)){const end=Math.min(i+(d.getDay()==0?0:(7-d.getDay())%7),days.length-1);h+=`<div class="wh">${d.getDate()} – ${days[end].getDate()} ${M(d).toUpperCase()}</div>`}
+  const chips=r?ADD.filter(x=>r[x[0]]).map(x=>x[0]=="note"?"Note":x[1]+" "+inr(r[x[0]])).join(" • "):"";
+  h+=`<div class="drow"><div style="width:48px;text-align:center;${T?"color:#b7791f":""}"><b style="font-size:18px">${d.getDate()}</b><br><small>${d.toLocaleDateString("en-IN",{weekday:"short"})}</small></div><div style="flex:1">`+
+   (mk?`<button class="bd on ${r.status=="A"?"bad":r.status=="No"?"no":"ok"}" data-a="open|${ds}">${r.status}</button><button class="x" style="color:var(--mut);font-size:16px" data-a="clr|${ds}">✕</button>`:`<button class="bd bad" data-a="q|${ds}|A">A</button><button class="bd ok" data-a="q|${ds}|P">P</button>`)+
+   (chips?`<div style="font-size:11px;color:var(--mut)">${esc(chips)}</div>`:"")+`</div><div>${r&&(mk||extra(r))?inr(wage(r)):""}</div><button class="plus" data-a="open|${ds}">+</button></div>`});
+ h+="</div>";
+ if(aSheet){const r=getA(aEmp,aSheet)||{},d=new Date(aSheet+"T00:00"),af=ADD.find(x=>x[0]==aField);
+  h+=`<div data-a="close" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20"><div data-a="noop" style="position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:90%;overflow:auto"><div style="display:flex;justify-content:space-between"><h2 style="font-size:20px">${d.toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"})}</h2><button class="x" style="color:var(--tx)" data-a="close">✕</button></div><small style="color:var(--mut)">${esc(aEmp)}</small>
+  <label style="margin-top:12px">ATTENDANCE</label><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${ST.map(c=>`<button class="sbn ${r.status==c?"on":""}" data-a="st|${c}">${c}</button>`).join("")}</div>
+  ${r.status?`<button class="btn g" style="margin-top:8px" data-a="clr|${aSheet}">✕ Attendance mark hatao</button>`:""}
+  <label style="margin-top:12px">ADD</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${ADD.map(x=>`<button class="sbn" style="height:64px;${r[x[0]]?"border-color:var(--pri)":""}" data-a="fld|${x[0]}">${x[1]}${r[x[0]]?`<br><small>${x[0]=="note"?esc(String(r.note).slice(0,12)):inr(r[x[0]])}</small>`:""}</button>`).join("")}</div>`+
+  (af?`<div style="margin-top:10px"><label>${af[1]}${af[0]=="note"?"":" (₹)"}</label><input id="fv" type="${af[0]=="note"?"text":"number"}" step="any" min="0" value="${esc(r[af[0]]||"")}"><button class="btn" data-a="fsave">Save</button> <button class="btn g" data-a="fclr">Hatao</button></div>`:"")+`</div></div>`}
+ return h}
+function attBind(){$("#view").onclick=e=>{const t=e.target.closest("[data-a]");if(!t)return;const[a,x,y]=t.dataset.a.split("|");if(a=="noop")return;
+ if(a=="emp")aEmp=x;else if(a=="back"){aEmp=null;aSheet=null;aEdit=false}else if(a=="mode")aMode=x;
+ else if(a=="nav"){const d=new Date(aAnchor+"T00:00");if(aMode=="Month")d.setMonth(d.getMonth()+ +x,1);else d.setDate(d.getDate()+7* +x);aAnchor=fmt(d)}
+ else if(a=="q")upsert(x,{status:y});else if(a=="open"){aSheet=x;aField=null}else if(a=="close"){aSheet=null;aField=null}
+ else if(a=="st"){const q=getA(aEmp,aSheet);if(q&&q.status==x)clr(aSheet);else upsert(aSheet,{status:x})}else if(a=="clr")clr(x);else if(a=="fld")aField=x;
+ else if(a=="fsave"){upsert(aSheet,{[aField]:$("#fv").value});aField=null}else if(a=="fclr"){upsert(aSheet,{[aField]:""});aField=null}
+ else if(a=="eedit")aEdit=true;else if(a=="ecancel")aEdit=false;
+ else if(a=="esave"){const nm=$("#en").value.trim();if(!nm){return}const old=aEmp,v={name:nm,role:$("#er2").value,stype:$("#et").value,amt:$("#ea").value};let em=emp_(old);if(em)Object.assign(em,v);else db.emp.push(Object.assign({id:Date.now()+""},v));renameEmp(old,nm);aEmp=nm;aEdit=false;save()}
+ render();const fv=$("#fv");if(fv)fv.focus()}}
+function list(k){const rows=(k=="projects"?db.projects:k=="emp"?db.emp:flt(db[k])).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ let h=`<div class="card"><h2>${T[k]} list (${rows.length})</h2>`;
+ if(!rows.length)h+='<div class="empty">Abhi koi entry nahi hai</div>';
+ h+=rows.map(r=>{const[a,b]=line(k,r);return`<div class="row"><div><b>${a}</b><span>${b}</span></div><div style="white-space:nowrap"><button class="x" data-e="${r.id}" style="color:var(--pri)">✎</button><button class="x" data-d="${r.id}">✕</button></div></div>`}).join("");
+ if(rows.length)h+=`<button class="btn g noprint" id="csv">CSV download</button> <button class="btn g noprint" onclick="print()">Print</button>`;
+ return h+"</div>"}
+function sums(pid){const m=r=>pid=="all"||r.project==pid;
+ const inc=db.fin.filter(r=>m(r)&&r.type=="Income").reduce((s,r)=>s+(+r.amount||0),0);
+ const cost=db.fin.filter(r=>m(r)&&r.type=="Cost").reduce((s,r)=>s+(+r.amount||0),0);
+ const w=db.att.filter(m).reduce((s,r)=>s+wage(r),0);
+ return{inc,cost,w,profit:inc-cost-w}}
+function dash(){const s=sums(pf),t=today();
+ const todayAtt=flt(db.att).filter(r=>r.date==t&&dv(r)>0).length;
+ const td=flt(db.fin).filter(r=>r.date==t);
+ const ti=td.filter(r=>r.type=="Income").reduce((a,r)=>a+(+r.amount||0),0),tc=td.filter(r=>r.type=="Cost").reduce((a,r)=>a+(+r.amount||0),0);
+ return`<div class="card"><h2>Aaj (${t})</h2><div class="kpi"><div><small>Workers present</small><b>${todayAtt}</b></div><div><small>DPR entries</small><b>${flt(db.dpr).filter(r=>r.date==t).length}</b></div><div><small>Aaj ki income</small><b class="in">${inr(ti)}</b></div><div><small>Aaj ka cost</small><b class="out">${inr(tc)}</b></div></div></div>
+ <div class="card"><h2>Total ${pf=="all"?"(All projects)":esc(pname(pf))}</h2><div class="kpi"><div><small>Income</small><b class="in">${inr(s.inc)}</b></div><div><small>Cost (expense)</small><b class="out">${inr(s.cost)}</b></div><div><small>Attendance wages</small><b class="out">${inr(s.w)}</b></div><div><small>Net profit / loss</small><b class="${s.profit>=0?"in":"out"}">${inr(s.profit)}</b></div></div></div>
+ <div class="card"><h2>Project-wise summary</h2><div class="scroll"><table><tr><th>Project</th><th>Income</th><th>Cost</th><th>Wages</th><th>Profit</th></tr>${db.projects.map(p=>{const x=sums(p.id);return`<tr><td>${esc(p.name)}</td><td>${inr(x.inc)}</td><td>${inr(x.cost)}</td><td>${inr(x.w)}</td><td class="${x.profit>=0?"in":"out"}">${inr(x.profit)}</td></tr>`}).join("")||'<tr><td colspan="5" class="empty">Koi project nahi</td></tr>'}</table></div>
+ <button class="btn g noprint" id="bk">Backup download (JSON)</button> <button class="btn g noprint" onclick="print()">Print</button></div>`}
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
+function render(){tabs();pfSel();$("#pf").parentElement.style.display=tab=="projects"||tab=="emp"?"none":"";
+ const v=$("#view");
+ if(tab=="dash"){v.innerHTML=dash();$("#bk").onclick=()=>dl("svgline-backup.json",JSON.stringify(db),"application/json");return}
+ v.innerHTML=tab=="att"?attView():formHtml(tab)+list(tab);if(tab=="att")attBind();
+ const mi=$("#mon");if(mi){mi.onchange=()=>{mon=mi.value||mon;render()};$("#mcsv").onclick=()=>{const q=x=>'"'+String(x??"").replace(/"/g,'""')+'"';dl("employees-"+mon+".csv","\ufeff"+"Name,Work,Present,Half day,Absent,Salary (Monthly),Payable (on Attendance),Advance,Paid,Dues (is mahine),Pichla Dues\n"+mrows().map(o=>[o.name,o.work,o.p,o.h,o.a,o.rt,o.sal,o.adv,o.paid,o.dues,o.carry].map(q).join(",")).join("\n"),"text/csv")}}
+ const f=$("#f");if(f&&tab=="dpr"){const box=document.createElement("div"),r2=n=>Math.round(n*100)/100||0;
+  box.innerHTML='<h2 style="margin-top:12px">Pipe entries</h2><div id="rows"></div><button type="button" class="btn g" id="addr">+ Row add karein</button><div style="margin-top:8px;font-size:16px"><b id="gt"></b></div>';
+  f.insertBefore(box,f.querySelector(".btn"));
+  const rowsEl=box.querySelector("#rows"),gt=box.querySelector("#gt");
+  const g=(d,k)=>d.querySelector('[name="'+k+'"]');
+  const calc=()=>{let t=0;rowsEl.querySelectorAll(".pr").forEach(d=>{const di=g(d,"pipe").value=="DI";if(di){g(d,"len").value=5.5;g(d,"len").readOnly=true}else g(d,"len").readOnly=false;g(d,"tlen").value=r2(g(d,"qty").value*g(d,"len").value);g(d,"total").value=r2(g(d,"tlen").value*g(d,"rate").value);t+=+g(d,"total").value});gt.textContent="Grand total: "+inr(t)};
+  const add=()=>{const d=document.createElement("div");d.className="pr";d.style.cssText="border:1px solid var(--bd);border-radius:8px;padding:8px;margin-top:8px";
+   d.innerHTML='<div class="grid">'+PR.map(field).join("")+'</div><button type="button" class="x">✕ Row hatao</button>';
+   d.oninput=e=>{if(e.target.name=="pipe"){g(d,"size").innerHTML=SZ[e.target.value].map(o=>`<option>${o}</option>`).join("");if(e.target.value!="DI")g(d,"len").value=""}calc()};
+   d.querySelector(".x").onclick=()=>{d.remove();calc()};rowsEl.appendChild(d);calc()};
+  box.querySelector("#addr").onclick=add;const e0=editId&&db.dpr.find(x=>x.id==editId);
+  if(e0){(e0.rows||[e0]).forEach(o=>{add();const d=rowsEl.lastChild;g(d,"pipe").value=o.pipe||"HDPE";g(d,"size").innerHTML=(SZ[o.pipe]||SZ.HDPE).map(z=>`<option>${z}</option>`).join("");g(d,"size").value=o.size;g(d,"qty").value=o.qty;g(d,"len").value=o.len;g(d,"rate").value=o.rate});calc()}else add()}
+if(f&&tab=="att"&&!editId)sheet(f);
+if(f&&MR[tab]&&!(tab=="att"&&!editId)){const RF=F[tab].filter(x=>MR[tab].r.includes(x[0])),box=document.createElement("div");
+  box.innerHTML='<h2 style="margin-top:12px">'+(tab=="att"?"Workers":"Employees")+'</h2><datalist id="empl">'+db.emp.map(e=>`<option value="${esc(e.name)}">`).join("")+'</datalist><div id="rows"></div><button type="button" class="btn g" id="addr">+ Row add karein</button>';
+  f.insertBefore(box,f.querySelector(".btn"));
+  const rowsEl=box.querySelector("#rows"),g=(d,k)=>d.querySelector('[name="'+k+'"]');
+  const add=()=>{const d=document.createElement("div");d.className="pr";d.style.cssText="border:1px solid var(--bd);border-radius:8px;padding:8px;margin-top:8px";
+   d.innerHTML='<div class="grid">'+RF.map(field).join("")+'</div><button type="button" class="x">✕ Row hatao</button>';
+   if(tab=="att"){const nm=g(d,"name");nm.setAttribute("list","empl");nm.onchange=()=>{const e=db.emp.find(x=>x.name.trim().toLowerCase()==nm.value.trim().toLowerCase());if(e){g(d,"role").value=e.role;if(e.stype=="Daily wage")g(d,"wage").value=e.amt}}}
+   d.querySelector(".x").onclick=()=>d.remove();rowsEl.appendChild(d)};
+  box.querySelector("#addr").onclick=add;add();const e1=editId&&db[tab].find(x=>x.id==editId);
+  if(e1){RF.forEach(x=>{const el=g(rowsEl.firstChild,x[0]);if(el)el.value=e1[x[0]]??""});box.querySelector("#addr").style.display="none";rowsEl.firstChild.querySelector(".x").style.display="none"}}
+const er=editId&&db[tab].find(x=>x.id==editId);
+if(f&&er){(MR[tab]?F[tab].filter(x=>MR[tab].h.includes(x[0])):F[tab]).forEach(x=>{if(f.elements[x[0]])f.elements[x[0]].value=er[x[0]]??""})}
+const cx=$("#cx");if(cx)cx.onclick=()=>{editId=null;render()};
+v.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{editId=b.dataset.e;render();window.scrollTo(0,0)});
+if(f)f.onsubmit=e=>{e.preventDefault();const r={id:Date.now()+""+Math.random().toString(36).slice(2,5)};
+  if(tab=="att"&&!editId){sheetSave(f);return}
+  if(MR[tab]){const hd=F[tab].filter(x=>MR[tab].h.includes(x[0])),RF=F[tab].filter(x=>MR[tab].r.includes(x[0])),base={};hd.forEach(x=>base[x[0]]=f.elements[x[0]].value);
+   const rs=[...f.querySelectorAll(".pr")].map(d=>{const o={};RF.forEach(x=>o[x[0]]=d.querySelector('[name="'+x[0]+'"]').value);return o}).filter(o=>(o.name||"").trim());
+   if(!rs.length){alert("Kam se kam ek naam daalein");return}if(editId){const i=db[tab].findIndex(x=>x.id==editId);if(i>=0){const on=db[tab][i].name;db[tab][i]=Object.assign({},db[tab][i],base,rs[0]);if(tab=="emp")renameEmp(on,db[tab][i].name)}editId=null;save();render();return}rs.forEach((o,i)=>db[tab].push(Object.assign({id:r.id+i},base,o)));save();render();return}
+  F[tab].forEach(x=>r[x[0]]=f.elements[x[0]].value);if(tab=="dpr"){r.rows=[...f.querySelectorAll(".pr")].map(d=>{const o={};PR.forEach(x=>o[x[0]]=d.querySelector('[name="'+x[0]+'"]').value);return o}).filter(o=>+o.qty>0);if(!r.rows.length){alert("Kam se kam ek pipe row me Qty daalein");return}r.total=r.rows.reduce((t,o)=>t+(+o.total||0),0)}if(editId){const i=db[tab].findIndex(x=>x.id==editId);if(i>=0){r.id=db[tab][i].id;db[tab][i]=r}else db[tab].push(r);editId=null}else{db[tab].push(r);if(tab=="projects")pf=r.id}save();render()};
+ v.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{if(confirm("Delete karna hai?")){db[tab]=db[tab].filter(r=>r.id!=b.dataset.d);editId=null;save();render()}});
+ const c=$("#csv");if(c)c.onclick=()=>{const q=x=>'"'+String(x??"").replace(/"/g,'""')+'"';let H,rows;
+  if(tab=="dpr"){const hk=F.dpr.map(x=>x[0]),all=F.dpr.concat(PR);H=all.map(x=>x[1]);rows=flt(db.dpr).flatMap(r=>(r.rows||[r]).map(o=>all.map(x=>q(x[0]=="project"?pname(r.project):hk.includes(x[0])?r[x[0]]:o[x[0]])).join(",")))}
+  else{const cols=F[tab].map(x=>x[0]);H=F[tab].map(x=>x[1]);rows=(tab=="projects"?db.projects:tab=="emp"?db.emp:flt(db[tab])).map(r=>cols.map(k=>q(k=="project"?pname(r[k]):r[k])).join(","))}
+  dl(tab+".csv","\ufeff"+H.join(",")+"\n"+rows.join("\n"),"text/csv")}}
+render();
+</script>
+</body>
+</html>
